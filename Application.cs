@@ -1,42 +1,380 @@
-﻿using System;
-using System.Windows.Forms;
+using Microsoft.VisualBasic.FileIO;
+using Newtonsoft.Json;
+using RestSharp;
+using Swashbuckle.Swagger;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Net.Http;
-using System.Text.RegularExpressions;
-using System.Net;
-using System.Net.Http.Headers;
+using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization.Formatters;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Xml;
+using System.Xml.Linq;
+using Xceed.Wpf.Toolkit;
+using JsonException = System.Text.Json.JsonException;
 
-namespace BurlacuLabMarkI
+namespace PR_LAB_1
 {
-    public partial class Form1 : Form
+    class Program
     {
-        public string sURL = "http://192.168.103.210:5000/register";
-        public string token = "";
-        public string route2 = "";
-        public string route3 = "http://192.168.103.210:5000/home";
-        public Form1()
+        public static string tokenURL = "http://localhost:5000/register";
+        public static string token = "";
+        public static string homeURL = "http://localhost:5000/home";
+        public static List<ManualResetEvent> events = new List<ManualResetEvent>();
+
+        //public static LinkedList<string> links = new LinkedList<string>();
+        //public static string[] links = new string[999];
+        //public static int index = 0;
+        //public static int work_index = 0;
+
+        private static readonly object balanceLock = new object();
+        public static List<string> links = new List<string>();
+        private static int flag = 0;
+        public static int[] processes = new int[999];
+        public static int index = 0;
+
+        public static int flag1 = 0;
+        public static int flag2 = 0;
+        public static int flag3 = 0;
+        public static int flag4 = 0;
+
+
+        static async System.Threading.Tasks.Task Main(string[] args)
         {
-            InitializeComponent();
+            //Get the token and wait a bit.
+            ThreadPool.QueueUserWorkItem(GetToken);
+            Thread.Sleep(500);
+
+            //Start Getting Data
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Access-Token", token);
+
+            var result = await client.GetStringAsync(homeURL);  
+            dynamic convertedResult = JsonConvert.DeserializeObject(result);
+            
+            var reg = new Regex("\".*?\"");
+            var matches = reg.Matches(convertedResult.link.ToString());
+
+            for (int i = 0; i < 100; i++)
+            {
+                if (i == matches.Count) { break; }
+
+                if (i % 2 != 0)
+                {
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                }
+
+            }
+
+         
+            
+            /*
+            while (true) {
+              
+                var resetEvent = new ManualResetEvent(false);
+                ThreadPool.QueueUserWorkItem(arg =>
+                {
+                    //Console.WriteLine(links.Count);
+                    Work(1);
+                    resetEvent.Set();
+                    
+                });
+                
+                events.Add(resetEvent);
+
+                
+
+            }
+            */
+             
+            //Wait for all threads to finish before continuing further
+            //WaitHandle.WaitAll(events.ToArray());
+            
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
+            
+
+            Thread.Sleep(2000);
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
+
+            while(true){
+                Console.WriteLine(flag1);
+                if (flag1 == 0)
+                {
+                    flag1 = 1;
+                    ThreadPool.QueueUserWorkItem(Work);
+                }
+
+                if (flag2 == 0)
+                {
+                    flag2 = 2;
+                    ThreadPool.QueueUserWorkItem(Work2);
+                }
+            }
+            
+
+
+            for (int i = 0; i < links.Count - 1; i++)
+            {
+                Console.WriteLine(links[i]);
+
+            }
+
+
         }
 
-        private async void button1_Click(object sender, EventArgs e)
+        static async void GetToken(Object stateInfo)
         {
             var client = new HttpClient();
-
-            var result = await client.GetStringAsync(sURL);
-            label1.Text = result;
-            var reg = new Regex("\".*?\"");
-            var matches = reg.Matches(result);
-
-            token = matches[1].ToString().Replace("\"",String.Empty);
-            //token = matches[1].ToString();
-            route2 = matches[3].ToString().Replace("\"", String.Empty);
-
-            
-            client.DefaultRequestHeaders.Add("X-Access-Token", token);
-            result = await client.GetStringAsync(route3);
-            label1.Text = result.ToString();
-            
+            var result = await client.GetStringAsync(tokenURL);
+            dynamic convertedResult = JsonConvert.DeserializeObject(result);
+            token = convertedResult.access_token;
         }
+
+        static async void Work2(Object stateInfo)
+        {
+        
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Access-Token", token);
+
+            
+
+
+
+            lock (balanceLock)
+            {
+        
+                if (flag == 0) { flag = 1; goto dontRemove; }
+                try
+                {
+                    links.RemoveAt(0);
+                }
+                catch { goto endOfFunction; }
+
+            }
+        dontRemove:
+            var result = "";
+            try
+            {
+                result = await client.GetStringAsync("http://localhost:5000" + links[0]);
+            }
+            catch {
+                goto endOfFunction;
+            }         
+
+            
+
+            if (result.Contains("xml"))
+            {
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchXML; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                        links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                        //index++;
+                    //}
+
+                }
+            killSwitchXML:;
+            }
+
+            else if (result.Contains("csv"))
+            {
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchCSV; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                        links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                        //index++;
+                    //}
+
+                }
+            killSwitchCSV:;
+            }
+
+            else if (result.Contains("yami"))
+            {
+
+            }
+
+            else
+            {
+                
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchJson; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                        links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                        //index++;
+                    //}
+
+                }
+            killSwitchJson:;
+
+            }
+        endOfFunction:;
+
+            lock (balanceLock)
+            {
+                flag2 = 0;
+            }
+        }
+
+        static async void Work(Object stateInfo)
+        {
+
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Access-Token", token);
+
+
+
+
+
+            lock (balanceLock)
+            {
+
+                if (flag == 0) { flag = 1; goto dontRemove; }
+                try
+                {
+                    links.RemoveAt(0);
+                }
+                catch { goto endOfFunction; }
+
+            }
+        dontRemove:
+            var result = "";
+            try
+            {
+                result = await client.GetStringAsync("http://localhost:5000" + links[0]);
+            }
+            catch
+            {
+                goto endOfFunction;
+            }
+
+
+
+            if (result.Contains("xml"))
+            {
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchXML; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                    //}
+
+                }
+            killSwitchXML:;
+            }
+
+            else if (result.Contains("csv"))
+            {
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchCSV; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                    //}
+
+                }
+            killSwitchCSV:;
+            }
+
+            else if (result.Contains("yami"))
+            {
+
+            }
+
+            else
+            {
+
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchJson; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                    //}
+
+                }
+            killSwitchJson:;
+
+            }
+        endOfFunction:;
+
+            lock (balanceLock)
+            {
+                flag1 = 0;
+            }
+        }
+
     }
+
+
 }
