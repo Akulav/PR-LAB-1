@@ -16,6 +16,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Web.Http.Metadata.Providers;
 using System.Xml;
 using System.Xml.Linq;
 using Xceed.Wpf.Toolkit;
@@ -40,6 +41,7 @@ namespace PR_LAB_1
         private static int flag = 0;
         public static int[] processes = new int[999];
         public static int index = 0;
+        public static string preventRepeats = "";
 
         public static int flag1 = 0;
         public static int flag2 = 0;
@@ -104,14 +106,15 @@ namespace PR_LAB_1
             ThreadPool.QueueUserWorkItem(Work);
             ThreadPool.QueueUserWorkItem(Work);
             ThreadPool.QueueUserWorkItem(Work);
-            
+            Thread.Sleep(1000);
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(Work);
 
-            Thread.Sleep(2000);
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
 
-            while(true){
+
+            while (true){
                 //Console.WriteLine(flag1);
                 if (flag1 == 0)
                 {
@@ -129,6 +132,12 @@ namespace PR_LAB_1
                 {
                     flag3 = 3;
                     ThreadPool.QueueUserWorkItem(Work3);
+                }
+
+                if (flag4 == 0)
+                {
+                    flag4 = 4;
+                    ThreadPool.QueueUserWorkItem(Work4);
                 }
             }
             
@@ -262,6 +271,121 @@ namespace PR_LAB_1
             lock (balanceLock)
             {
                 flag2 = 0;
+            }
+        }
+
+        static async void Work4(Object stateInfo)
+        {
+
+
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Access-Token", token);
+
+
+
+
+
+            lock (balanceLock)
+            {
+
+                if (flag == 0) { flag = 1; goto dontRemove; }
+                try
+                {
+                    links.RemoveAt(0);
+                }
+                catch { goto endOfFunction; }
+
+            }
+        dontRemove:
+            var result = "";
+            try
+            {
+                result = await client.GetStringAsync("http://localhost:5000" + links[0]);
+            }
+            catch
+            {
+                goto endOfFunction;
+            }
+
+
+
+            if (result.Contains("xml"))
+            {
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchXML; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                    //}
+
+                }
+            killSwitchXML:;
+            }
+
+            else if (result.Contains("csv"))
+            {
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchCSV; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                    //}
+
+                }
+            killSwitchCSV:;
+            }
+
+            else if (result.Contains("yami"))
+            {
+
+            }
+
+            else
+            {
+
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                Console.WriteLine(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchJson; }
+                var matches = reg.Matches(convertedResult.link.ToString());
+
+                for (int i = 0; i < 100; i++)
+                {
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                    //}
+
+                }
+            killSwitchJson:;
+
+            }
+        endOfFunction:;
+
+            lock (balanceLock)
+            {
+                flag4 = 0;
             }
         }
 
