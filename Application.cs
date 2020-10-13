@@ -26,7 +26,7 @@ namespace PR_LAB_1
         public static int flag3 = 0;
         public static int flag4 = 0;
 
-        public static string finalJSON = "";
+        public static string[] convertedData = new string[999];
 
         static async System.Threading.Tasks.Task Main(string[] args)
         {
@@ -56,15 +56,17 @@ namespace PR_LAB_1
 
             }
 
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
+            ThreadPool.QueueUserWorkItem(o => Work(flag1));
+            ThreadPool.QueueUserWorkItem(o => Work(flag2));
+            ThreadPool.QueueUserWorkItem(o => Work(flag3));
+            ThreadPool.QueueUserWorkItem(o => Work(flag4));
+
             Thread.Sleep(1000);
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
-            ThreadPool.QueueUserWorkItem(Work);
+
+            ThreadPool.QueueUserWorkItem(o => Work(flag1));
+            ThreadPool.QueueUserWorkItem(o => Work(flag2));
+            ThreadPool.QueueUserWorkItem(o => Work(flag3));
+            ThreadPool.QueueUserWorkItem(o => Work(flag4));
 
 
             while (true)
@@ -72,296 +74,113 @@ namespace PR_LAB_1
                 //Console.WriteLine(flag1);
                 if (flag1 == 0)
                 {
-                    flag1 = 1;
-                    ThreadPool.QueueUserWorkItem(Work);
+                    {
+                        flag1 = 1;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag1));
+                    }
+
+                    if (flag2 == 0)
+                    {
+                        flag2 = 2;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag2));
+                    }
+
+                    if (flag3 == 0)
+                    {
+                        flag3 = 3;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag3));
+                    }
+
+                    if (flag4 == 0)
+                    {
+                        flag4 = 4;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag4));
+                    }
+
                 }
 
-                if (flag2 == 0)
-                {
-                    flag2 = 2;
-                    ThreadPool.QueueUserWorkItem(Work2);
-                }
-
-                if (flag3 == 0)
-                {
-                    flag3 = 3;
-                    ThreadPool.QueueUserWorkItem(Work3);
-                }
-
-                if (flag4 == 0)
-                {
-                    flag4 = 4;
-                    ThreadPool.QueueUserWorkItem(Work4);
-                }
-
-                //Console.WriteLine(finalJSON);
-                System.IO.File.WriteAllText(@"C:\Users\Public\\WriteLines.txt", finalJSON);
             }
 
-            
-            
-        }
+            static async void GetToken(Object stateInfo)
+            {
+                var client = new HttpClient();
+                var result = await client.GetStringAsync(tokenURL);
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                token = convertedResult.access_token;
+            }
 
-        static async void GetToken(Object stateInfo)
-        {
-            var client = new HttpClient();
-            var result = await client.GetStringAsync(tokenURL);
-            dynamic convertedResult = JsonConvert.DeserializeObject(result);
-            token = convertedResult.access_token;
-        }
-
-        static async void Work2(Object stateInfo)
-        {
-
-
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-Access-Token", token);
-
-            lock (balanceLock)
+            static async void Work(int flagID)
             {
 
-                if (flag == 0) { flag = 1; goto dontRemove; }
+
+                var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("X-Access-Token", token);
+
+                lock (balanceLock)
+                {
+
+                    if (flag == 0) { flag = 1; goto dontRemove; }
+                    try
+                    {
+                        links.RemoveAt(0);
+                    }
+                    catch { goto endOfFunction; }
+
+                }
+            dontRemove:
+                var result = "";
                 try
                 {
-                    links.RemoveAt(0);
+                    result = await client.GetStringAsync("http://localhost:5000" + links[0]);
                 }
-                catch { goto endOfFunction; }
-
-            }
-        dontRemove:
-            var result = "";
-            try
-            {
-                result = await client.GetStringAsync("http://localhost:5000" + links[0]);
-            }
-            catch
-            {
-                goto endOfFunction;
-            }
-
-            dynamic convertedResult = JsonConvert.DeserializeObject(result);
-            JsonConvert.DeserializeObject(result);
-
-
-
-            finalJSON = finalJSON + " " + "\n" + convertedResult;
-
-            //Console.WriteLine(result);
-            var reg = new Regex("\".*?\"");
-            if (convertedResult.link == null) { goto killSwitchJson; }
-            var matches = reg.Matches(convertedResult.link.ToString());
-
-            for (int i = 0; i < 100; i++)
-            {
-                if (i == matches.Count) { break; }
-
-                //if (i % 2 != 0)
-                //{
-                links.Add(matches[i].ToString().Replace("\"", String.Empty));
-                //index++;
-                //}
-
-            }
-        killSwitchJson:;
-
-
-        endOfFunction:;
-
-            lock (balanceLock)
-            {
-                flag2 = 0;
-            }
-        }
-
-        static async void Work4(Object stateInfo)
-        {
-
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-Access-Token", token);
-
-            lock (balanceLock)
-            {
-
-                if (flag == 0) { flag = 1; goto dontRemove; }
-                try
+                catch
                 {
-                    links.RemoveAt(0);
+                    goto endOfFunction;
                 }
-                catch { goto endOfFunction; }
 
-            }
-        dontRemove:
-            var result = "";
-            try
-            {
-                result = await client.GetStringAsync("http://localhost:5000" + links[0]);
-            }
-            catch
-            {
-                goto endOfFunction;
-            }
+                dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                JsonConvert.DeserializeObject(result);
 
-            dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                var reg = new Regex("\".*?\"");
+                if (convertedResult.link == null) { goto killSwitchJson; }
+                var matches = reg.Matches(convertedResult.link.ToString());
 
-            finalJSON = finalJSON + " " + "\n" + convertedResult;
-
-            //Console.WriteLine(result);
-            var reg = new Regex("\".*?\"");
-            if (convertedResult.link == null) { goto killSwitchJson; }
-            var matches = reg.Matches(convertedResult.link.ToString());
-
-            for (int i = 0; i < 100; i++)
-            {
-                if (i == matches.Count) { break; }
-
-                //if (i % 2 != 0)
-                //{
-                links.Add(matches[i].ToString().Replace("\"", String.Empty));
-                //index++;
-                //}
-
-            }
-        killSwitchJson:;
-
-
-        endOfFunction:;
-
-            lock (balanceLock)
-            {
-                flag4 = 0;
-            }
-        }
-
-        static async void Work3(Object stateInfo)
-        {
-
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-Access-Token", token);
-
-            lock (balanceLock)
-            {
-
-                if (flag == 0) { flag = 1; goto dontRemove; }
-                try
+                for (int i = 0; i < 100; i++)
                 {
-                    links.RemoveAt(0);
+                    if (i == matches.Count) { break; }
+
+                    //if (i % 2 != 0)
+                    //{
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    //index++;
+                    //}
+
                 }
-                catch { goto endOfFunction; }
-
-            }
-        dontRemove:
-            var result = "";
-            try
-            {
-                result = await client.GetStringAsync("http://localhost:5000" + links[0]);
-            }
-            catch
-            {
-                goto endOfFunction;
-            }
+            killSwitchJson:;
 
 
-            dynamic convertedResult = JsonConvert.DeserializeObject(result);
+            endOfFunction:;
 
-            finalJSON = finalJSON + " " + "\n" + convertedResult;
-
-            //Console.WriteLine(result);
-            var reg = new Regex("\".*?\"");
-            if (convertedResult.link == null) { goto killSwitchJson; }
-            var matches = reg.Matches(convertedResult.link.ToString());
-
-            for (int i = 0; i < 100; i++)
-            {
-                if (i == matches.Count) { break; }
-
-                //if (i % 2 != 0)
-                //{
-                links.Add(matches[i].ToString().Replace("\"", String.Empty));
-                //index++;
-                //}
-
-            }
-        killSwitchJson:;
-
-        endOfFunction:;
-
-            lock (balanceLock)
-            {
-                flag3 = 0;
-            }
-        }
-
-        static async void Work(Object stateInfo)
-        {
-
-            var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-Access-Token", token);
-
-            lock (balanceLock)
-            {
-
-                if (flag == 0) { flag = 1; goto dontRemove; }
-                try
+                lock (balanceLock)
                 {
-                    links.RemoveAt(0);
+                    if (flagID == flag1)
+                    {
+                        flag1 = 0;
+                    }
+                    if (flagID == flag2)
+                    {
+                        flag2 = 0;
+                    }
+                    if (flagID == flag3)
+                    {
+                        flag3 = 0;
+                    }
+                    if (flagID == flag4)
+                    {
+                        flag4 = 0;
+                    }
                 }
-                catch { goto endOfFunction; }
-
-            }
-        dontRemove:
-            var result = "";
-            try
-            {
-                result = await client.GetStringAsync("http://localhost:5000" + links[0]);
-            }
-            catch
-            {
-                goto endOfFunction;
-            }
-
-            dynamic convertedResult = JsonConvert.DeserializeObject(result);
-            finalJSON = finalJSON + " " + "\n" + convertedResult;
-
-            /*
-            if (result.Contains("xml"))
-            {
-                
-                var root = XMLReader.ReadFromString(result);
-                var msg = root["dataset"];
-                var content = msg.GetString("first_name");
-                Console.WriteLine("Message: " + content);
-            }
-            */
-            
-            Console.WriteLine(convertedResult.data);
-
-            try
-            {
-                Console.WriteLine(convertedResult.id.ToString());
-            }
-            catch { }
-
-            var reg = new Regex("\".*?\"");
-
-            if (convertedResult.link == null) { goto killSwitchJson; }
-
-            var matches = reg.Matches(convertedResult.link.ToString());
-
-            for (int i = 0; i < 100; i++)
-            {
-                if (i == matches.Count) { break; }
-                links.Add(matches[i].ToString().Replace("\"", String.Empty));
-            }
-
-        killSwitchJson:;
-        endOfFunction:;
-
-            lock (balanceLock)
-            {
-                flag1 = 0;
             }
         }
-
     }
-
 }
