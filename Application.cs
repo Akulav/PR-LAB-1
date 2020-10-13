@@ -25,8 +25,10 @@ namespace PR_LAB_1
         public static int flag2 = 0;
         public static int flag3 = 0;
         public static int flag4 = 0;
+        public static int flag5 = 0;
+        public static int flag6 = 0;
 
-        public static string[] convertedData = new string[999];
+        public static List<string> dataQueue = new List<string>();
 
         static async System.Threading.Tasks.Task Main(string[] args)
         {
@@ -56,13 +58,7 @@ namespace PR_LAB_1
 
             }
 
-            ThreadPool.QueueUserWorkItem(o => Work(flag1));
-            ThreadPool.QueueUserWorkItem(o => Work(flag2));
-            ThreadPool.QueueUserWorkItem(o => Work(flag3));
-            ThreadPool.QueueUserWorkItem(o => Work(flag4));
-
-            Thread.Sleep(1000);
-
+            
             ThreadPool.QueueUserWorkItem(o => Work(flag1));
             ThreadPool.QueueUserWorkItem(o => Work(flag2));
             ThreadPool.QueueUserWorkItem(o => Work(flag3));
@@ -71,7 +67,6 @@ namespace PR_LAB_1
 
             while (true)
             {
-                //Console.WriteLine(flag1);
                 if (flag1 == 0)
                 {
                     {
@@ -139,7 +134,15 @@ namespace PR_LAB_1
                 }
 
                 dynamic convertedResult = JsonConvert.DeserializeObject(result);
-                JsonConvert.DeserializeObject(result);
+
+                Thread.Sleep(1);
+                
+                lock (balanceLock)
+                {
+                    dataQueue.Add(convertedResult.data.ToString());
+                    Console.WriteLine(convertedResult.data.ToString());
+                }
+                
 
                 var reg = new Regex("\".*?\"");
                 if (convertedResult.link == null) { goto killSwitchJson; }
@@ -148,13 +151,7 @@ namespace PR_LAB_1
                 for (int i = 0; i < 100; i++)
                 {
                     if (i == matches.Count) { break; }
-
-                    //if (i % 2 != 0)
-                    //{
                     links.Add(matches[i].ToString().Replace("\"", String.Empty));
-                    //index++;
-                    //}
-
                 }
             killSwitchJson:;
 
