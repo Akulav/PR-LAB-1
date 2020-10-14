@@ -45,7 +45,7 @@ namespace PR_LAB_1
         public static List<dynamic> finalData = new List<dynamic>();
 
         public static List<dynamic> emails = new List<dynamic>();
-        public static List<dynamic> genders = new List<dynamic>();
+        public static List<dynamic> organizations = new List<dynamic>();
         public static List<dynamic> ip_addresses = new List<dynamic>();
         public static List<dynamic> first_names = new List<dynamic>();
         public static List<dynamic> last_names = new List<dynamic>();
@@ -87,13 +87,13 @@ namespace PR_LAB_1
                 }
 
             }
- 
+
 
             ThreadPool.QueueUserWorkItem(o => Work(flag1));
             ThreadPool.QueueUserWorkItem(o => Work(flag2));
             ThreadPool.QueueUserWorkItem(o => Work(flag3));
             ThreadPool.QueueUserWorkItem(o => Work(flag4));
-            
+
             ThreadPool.QueueUserWorkItem(convertToJSON);
             ThreadPool.QueueUserWorkItem(sortData);
             ThreadPool.QueueUserWorkItem(startServer);
@@ -136,7 +136,7 @@ namespace PR_LAB_1
                         flag6 = 6;
                         ThreadPool.QueueUserWorkItem(o => Work(flag6));
                     }
-   
+
                     if (flag7 == 0)
                     {
                         flag7 = 7;
@@ -151,8 +151,23 @@ namespace PR_LAB_1
 
                 }
 
-          
+            }
 
+            static void makeDistinct()
+            {
+                emails = emails.Distinct().ToList();
+                organizations = organizations.Distinct().ToList();
+                ip_addresses = ip_addresses.Distinct().ToList();
+                first_names = first_names.Distinct().ToList();
+                last_names = last_names.Distinct().ToList();
+                ids = ids.Distinct().ToList();
+                usernames = usernames.Distinct().ToList();
+                created_account_data = created_account_data.Distinct().ToList();
+                employee_ids = employee_ids.Distinct().ToList();
+                bitcoin_addresses = bitcoin_addresses.Distinct().ToList();
+                card_numbers = card_numbers.Distinct().ToList();
+                card_balances = card_balances.Distinct().ToList();
+                card_currencies = card_currencies.Distinct().ToList();
             }
 
             static async void GetToken(Object stateInfo)
@@ -176,7 +191,7 @@ namespace PR_LAB_1
                     NetworkStream ns = client.GetStream(); //networkstream is used to send/receive messages
 
                     byte[] hello = new byte[100];   //any message must be serialized (converted to byte array)
-                    hello = Encoding.Default.GetBytes("Africa maladet");  //conversion string => byte array
+                    hello = Encoding.Default.GetBytes("Africa maladet. Big 'D' to delete input");  //conversion string => byte array
 
                     ns.Write(hello, 0, hello.Length);     //sending the message
 
@@ -184,30 +199,256 @@ namespace PR_LAB_1
 
                     while (client.Connected)  //while the client is connected, we look for incoming messages
                     {
+                        makeDistinct();
 
-                        //byte[] af = new byte[100];   //any message must be serialized (converted to byte array)
-                        //af = Encoding.Default.GetBytes(emails[0].ToString());  //conversion string => byte array
-                        //ns.Write(af, 0, af.Length);     //sending the message
+                        byte[] msg = new byte[1024];
+                        int i = ns.Read(msg, 0, msg.Length);
+                        input = input + Encoding.ASCII.GetString(msg, 0, i);
 
-                        byte[] msg = new byte[1024];     //the messages arrive as byte array
-                        int i = ns.Read(msg, 0, msg.Length);   //the same networkstream reads the message sent by the client
-                        input = input + Encoding.ASCII.GetString(msg, 0 , i);
+                        if (Encoding.ASCII.GetString(msg, 0, i).Equals("D"))
+                        {
+
+                            input = String.Empty;
+                            for (int k = 0; k < 128; k++)
+                            {
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes("\n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+                        }
 
                         if (input.Equals("email"))
                         {
-                            byte[] output = new byte[100];   //any message must be serialized (converted to byte array)
-                            var finalEmails = emails.Distinct().ToList();
-                            for (int j = 0; j < finalEmails.Count - 1; j++)
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < emails.Count - 1; j++)
                             {
-                                output = Encoding.Default.GetBytes(finalEmails[j].ToString());  //conversion string => byte array
-                                ns.Write(output, 0, output.Length);     //sending the message
+                                output = Encoding.Default.GetBytes(emails[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
                             }
 
-                            input = String.Empty;
-                            byte[] newLine = new byte[100];   //any message must be serialized (converted to byte array)
-                            newLine = Encoding.Default.GetBytes(" \n");  //conversion string => byte array
 
-                            ns.Write(newLine, 0, newLine.Length);
+                        }
+
+                        if (input.Equals("id"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < ids.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(ids[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                         
+                        }
+
+                        if (input.Equals("username"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < usernames.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(usernames[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                  
+                        }
+
+                        if (input.Equals("last_name"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < last_names.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(last_names[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                           
+                        }
+
+                        if (input.Equals("organization"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < organizations.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(organizations[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                           
+                        }
+
+                        if (input.Equals("created_account_data"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < created_account_data.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(created_account_data[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                           
+                        }
+
+                        if (input.Equals("ip_address"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < ip_addresses.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(ip_addresses[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                            
+                        }
+
+                        if (input.Equals("first_name"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < first_names.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(first_names[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                        }
+
+                        if (input.Equals("bitcoin_address"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < bitcoin_addresses.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(bitcoin_addresses[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                            
+                        }
+
+                        if (input.Equals("card_number"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < card_numbers.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(card_numbers[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                          
+                        }
+
+                        if (input.Equals("card_balance"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < card_balances.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(card_balances[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                          
+                        }
+
+                        if (input.Equals("card_currency"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < card_currencies.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(card_currencies[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                          
+                        }
+
+                        if (input.Equals("employee_id"))
+                        {
+                            byte[] output = new byte[100];
+                            for (int j = 0; j < employee_ids.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(employee_ids[j].ToString());
+                                ns.Write(output, 0, output.Length);
+
+                                input = String.Empty;
+                                byte[] newLine = new byte[100];
+                                newLine = Encoding.Default.GetBytes(" \n");
+
+                                ns.Write(newLine, 0, newLine.Length);
+                            }
+
+                        
                         }
 
                     }
@@ -219,15 +460,12 @@ namespace PR_LAB_1
             static void sortData(Object stateInfo)
             {
             beginningSortData:
-                
+
                 if (dataQueue.Count > 0)
                 {
                     try
                     {
                         dynamic dynJson = JsonConvert.DeserializeObject(dataQueue[0].ToString());
-
-
-
 
                         foreach (var item in dynJson)
                         {
@@ -237,73 +475,73 @@ namespace PR_LAB_1
                                 emails.Add(item.email);
                             }
 
-                            else if (item.ToString().Contains("id"))
+                            if (item.ToString().Contains("id"))
                             {
                                 //Console.WriteLine(item.id);
                                 ids.Add(item.id);
                             }
 
-                            else if (item.ToString().Contains("username"))
+                            if (item.ToString().Contains("username"))
                             {
                                 //Console.WriteLine(item.username);
                                 usernames.Add(item.username);
                             }
 
-                            else if (item.ToString().Contains("created_account_data"))
+                            if (item.ToString().Contains("created_account_data"))
                             {
                                 //Console.WriteLine(item.created_account_data);
                                 created_account_data.Add(item.created_account_data);
                             }
 
-                            if (item.ToString().Contains("gender"))
+                            if (item.ToString().Contains("organization"))
                             {
-                                //Console.WriteLine(item.gender);
-                                genders.Add(item.gender);
+                                //Console.WriteLine(item.organization);
+                                organizations.Add(item.organization);
                             }
 
-                            else if (item.ToString().Contains("ip_address"))
+                            if (item.ToString().Contains("ip_address"))
                             {
                                 //Console.WriteLine(item.ip_address);
                                 ip_addresses.Add(item.ip_address);
                             }
 
-                            else if (item.ToString().Contains("first_name"))
+                            if (item.ToString().Contains("first_name"))
                             {
                                 //Console.WriteLine(item.first_name);
                                 first_names.Add(item.first_name);
                             }
 
-                            else if (item.ToString().Contains("last_name"))
+                            if (item.ToString().Contains("last_name"))
                             {
                                 //Console.WriteLine(item.last_name);
                                 last_names.Add(item.last_name);
                             }
 
-                            else if (item.ToString().Contains("bitcoin_addresses"))
+                            if (item.ToString().Contains("bitcoin_address"))
                             {
                                 //Console.WriteLine(item.last_name);
                                 bitcoin_addresses.Add(item.bitcoin_address);
                             }
 
-                            else if (item.ToString().Contains("card_numbers"))
+                            if (item.ToString().Contains("card_number"))
                             {
                                 //Console.WriteLine(item.last_name);
                                 card_numbers.Add(item.card_number);
                             }
 
-                            else if (item.ToString().Contains("card_balances"))
+                            if (item.ToString().Contains("card_balance"))
                             {
                                 //Console.WriteLine(item.last_name);
                                 card_balances.Add(item.card_balance);
                             }
 
-                            else if (item.ToString().Contains("card_currencies"))
+                            if (item.ToString().Contains("card_currency"))
                             {
                                 //Console.WriteLine(item.last_name);
                                 card_currencies.Add(item.card_currency);
                             }
 
-                            else if (item.ToString().Contains("employee_ids"))
+                            if (item.ToString().Contains("employee_id"))
                             {
                                 //Console.WriteLine(item.last_name);
                                 employee_ids.Add(item.employee_id);
@@ -319,8 +557,8 @@ namespace PR_LAB_1
                     {
                         dataQueue.RemoveAt(0);
                     }
-                    
-                    
+
+
                 }
 
                 goto beginningSortData;
@@ -328,20 +566,20 @@ namespace PR_LAB_1
 
             static void convertToJSON(Object stateInfo)
             {
-                begginingOfConvert:
+            begginingOfConvert:
                 if (xml.Count > 0)
-                    {
-                       
-                        XmlDocument doc = new XmlDocument();
-                        doc.LoadXml(xml[0].ToString());
-                        string result = JsonConvert.SerializeXmlNode(doc);
+                {
 
-                        dynamic convertedResult = JsonConvert.DeserializeObject(result);
+                    XmlDocument doc = new XmlDocument();
+                    doc.LoadXml(xml[0].ToString());
+                    string result = JsonConvert.SerializeXmlNode(doc);
 
-                        Console.WriteLine(convertedResult.dataset.record);
-                        dataQueue.Add(convertedResult.dataset.record.ToString());
-                        xml.RemoveAt(0);
-                    }
+                    dynamic convertedResult = JsonConvert.DeserializeObject(result);
+
+                    Console.WriteLine(convertedResult.dataset.record);
+                    dataQueue.Add(convertedResult.dataset.record.ToString());
+                    xml.RemoveAt(0);
+                }
 
                 if (csv.Count > 0)
                 {
@@ -374,7 +612,7 @@ namespace PR_LAB_1
                         dataQueue.Add(textWriter.ToString());
                         Console.WriteLine(textWriter.ToString());
                     }
-                        
+
                     yaml.RemoveAt(0);
 
                 }
@@ -385,15 +623,15 @@ namespace PR_LAB_1
                     dataQueue.Add(json[0].ToString());
                     json.RemoveAt(0);
                 }
-            
+
                 goto begginingOfConvert;
-                
+
             }
 
             static async void Work(int flagID)
             {
 
-                startOfFunction:
+            startOfFunction:
 
                 var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("X-Access-Token", token);
@@ -423,7 +661,7 @@ namespace PR_LAB_1
                 dynamic convertedResult = JsonConvert.DeserializeObject(result);
 
                 Thread.Sleep(1);
-                
+
                 lock (balanceLock)
                 {
                     if (convertedResult.ToString().Contains("xml"))
@@ -445,9 +683,9 @@ namespace PR_LAB_1
                     {
                         json.Add(convertedResult.data);
                     }
-                    
+
                 }
-                
+
 
                 var reg = new Regex("\".*?\"");
                 if (convertedResult.link == null) { goto killSwitchJson; }
