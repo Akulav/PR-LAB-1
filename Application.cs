@@ -4,17 +4,11 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
-using LunarLabs;
-using LunarLabs.Parser.XML;
-using LunarLabs.Parser.JSON;
-using LunarLabs.Parser;
 using YamlDotNet.Serialization;
 using System.IO;
 using System.Xml;
 using System.Text;
 using ChoETL;
-
-//Note to self, adauga inca o lista dupa conversie, redenumeste flagurile, fa conversia.
 
 namespace PR_LAB_1
 {
@@ -73,13 +67,15 @@ namespace PR_LAB_1
 
             }
 
-            ThreadPool.QueueUserWorkItem(convertToJSON);
+            
+            //ThreadPool.QueueUserWorkItem(sortData);
 
             ThreadPool.QueueUserWorkItem(o => Work(flag1));
             ThreadPool.QueueUserWorkItem(o => Work(flag2));
             ThreadPool.QueueUserWorkItem(o => Work(flag3));
             ThreadPool.QueueUserWorkItem(o => Work(flag4));
 
+            ThreadPool.QueueUserWorkItem(convertToJSON);
 
             while (true)
             {
@@ -147,7 +143,19 @@ namespace PR_LAB_1
 
             static void sortData(Object stateInfo)
             {
+            beginningSortData:
                 
+                if (dataQueue.Count > 0)
+                {
+                    try
+                    {
+                        //Console.WriteLine(dataQueue[dataQueue.Count - 1].dataset.record.ToString());
+                    }
+
+                    catch { }
+                }
+
+                goto beginningSortData;
             }
 
             static void convertToJSON(Object stateInfo)
@@ -158,9 +166,12 @@ namespace PR_LAB_1
                        
                         XmlDocument doc = new XmlDocument();
                         doc.LoadXml(xml[0].ToString());
-                        string json = JsonConvert.SerializeXmlNode(doc);
-                        Console.WriteLine(json);
-                        dataQueue.Add(json.ToString());
+                        string result = JsonConvert.SerializeXmlNode(doc);
+
+                        dynamic convertedResult = JsonConvert.DeserializeObject(result);
+
+                        Console.WriteLine(convertedResult.dataset.record);
+                        dataQueue.Add(convertedResult.dataset.record.ToString());
                         xml.RemoveAt(0);
                     }
 
