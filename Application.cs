@@ -9,6 +9,8 @@ using System.IO;
 using System.Xml;
 using System.Text;
 using ChoETL;
+using System.Net;
+using System.Net.Sockets;
 
 namespace PR_LAB_1
 {
@@ -39,6 +41,19 @@ namespace PR_LAB_1
         public static List<dynamic> xml = new List<dynamic>();
         public static List<dynamic> json = new List<dynamic>();
 
+        public static List<dynamic> finalData = new List<dynamic>();
+
+        public static List<dynamic> emails = new List<dynamic>();
+        public static List<dynamic> genders = new List<dynamic>();
+        public static List<dynamic> ip_addresses = new List<dynamic>();
+        public static List<dynamic> first_names = new List<dynamic>();
+        public static List<dynamic> last_names = new List<dynamic>();
+        public static List<dynamic> ids = new List<dynamic>();
+        public static List<dynamic> usernames = new List<dynamic>();
+        public static List<dynamic> created_account_data = new List<dynamic>();
+
+        public static string receivedQuery = "";
+
         static async System.Threading.Tasks.Task Main(string[] args)
         {
             //Get the token and wait a bit.
@@ -68,7 +83,7 @@ namespace PR_LAB_1
             }
 
             
-            //ThreadPool.QueueUserWorkItem(sortData);
+            ThreadPool.QueueUserWorkItem(sortData);
 
             ThreadPool.QueueUserWorkItem(o => Work(flag1));
             ThreadPool.QueueUserWorkItem(o => Work(flag2));
@@ -76,7 +91,8 @@ namespace PR_LAB_1
             ThreadPool.QueueUserWorkItem(o => Work(flag4));
 
             ThreadPool.QueueUserWorkItem(convertToJSON);
-
+            
+            //ThreadPool.QueueUserWorkItem(startServer);
             while (true)
             {
                 if (flag1 == 0)
@@ -128,9 +144,21 @@ namespace PR_LAB_1
                         ThreadPool.QueueUserWorkItem(o => Work(flag8));
                     }
 
+                    if(dataQueue.Count == 1)
+                    {
+                        break;
+                    }
+                }        
+            }
 
-                }
+            ThreadPool.QueueUserWorkItem(sortData);
+            ThreadPool.QueueUserWorkItem(startServer);
 
+            while (true)
+            {
+            back:
+
+                goto back;
             }
 
             static async void GetToken(Object stateInfo)
@@ -141,18 +169,97 @@ namespace PR_LAB_1
                 token = convertedResult.access_token;
             }
 
+            static void startServer(Object stateInfo)
+            {
+
+                TcpListener server = new TcpListener(IPAddress.Any, 9999);
+                server.Start();
+
+                while (true)   //we wait for a connection
+                {
+                    TcpClient client = server.AcceptTcpClient();  //if a connection exists, the server will accept it
+
+                    NetworkStream ns = client.GetStream(); //networkstream is used to send/receive messages
+
+                    byte[] hello = new byte[100];   //any message must be serialized (converted to byte array)
+                    hello = Encoding.Default.GetBytes("hello world");  //conversion string => byte array
+
+                    ns.Write(hello, 0, hello.Length);     //sending the message
+
+                    while (client.Connected)  //while the client is connected, we look for incoming messages
+                    {
+                        
+                    }
+                }
+
+            }
+
             static void sortData(Object stateInfo)
             {
             beginningSortData:
                 
                 if (dataQueue.Count > 0)
                 {
-                    try
+                    dynamic dynJson = JsonConvert.DeserializeObject(dataQueue[0].ToString());
+
+                    foreach (var item in dynJson)
                     {
-                        //Console.WriteLine(dataQueue[dataQueue.Count - 1].dataset.record.ToString());
+                        if (item.ToString().Contains("email"))
+                        {
+                            //Console.WriteLine(item.email);
+                            emails.Add(item.email);
+                        }
+
+                        else if (item.ToString().Contains("id"))
+                        {
+                            //Console.WriteLine(item.id);
+                            ids.Add(item.ids);
+                        }
+
+                        else if (item.ToString().Contains("username"))
+                        {
+                            //Console.WriteLine(item.username);
+                            usernames.Add(item.usernames);
+                        }
+
+                        else if (item.ToString().Contains("created_account_data"))
+                        {
+                            //Console.WriteLine(item.created_account_data);
+                            created_account_data.Add(item.created_account_data);
+                        }
+
+                        if (item.ToString().Contains("gender"))
+                        {
+                            //Console.WriteLine(item.gender);
+                            genders.Add(item.genders);
+                        }
+
+                        else if (item.ToString().Contains("ip_address"))
+                        {
+                            //Console.WriteLine(item.ip_address);
+                            ip_addresses.Add(item.ip_addresses);
+                        }
+
+                        else if (item.ToString().Contains("first_name"))
+                        {
+                            //Console.WriteLine(item.first_name);
+                            first_names.Add(item.first_names);
+                        }
+
+                        else if (item.ToString().Contains("last_name"))
+                        {
+                            //Console.WriteLine(item.last_name);
+                            last_names.Add(item.last_names);
+                        }
+
                     }
 
-                    catch { }
+                    if (dataQueue.Count > 0)
+                    {
+                        dataQueue.RemoveAt(0);
+                    }
+                    
+                    
                 }
 
                 goto beginningSortData;
@@ -225,6 +332,7 @@ namespace PR_LAB_1
             static async void Work(int flagID)
             {
 
+                startOfFunction:
 
                 var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("X-Access-Token", token);
