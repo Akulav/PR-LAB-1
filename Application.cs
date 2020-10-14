@@ -6,6 +6,15 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using LunarLabs;
 using LunarLabs.Parser.XML;
+using LunarLabs.Parser.JSON;
+using LunarLabs.Parser;
+using YamlDotNet.Serialization;
+using System.IO;
+using System.Xml;
+using System.Text;
+using ChoETL;
+
+//Note to self, adauga inca o lista dupa conversie, redenumeste flagurile, fa conversia.
 
 namespace PR_LAB_1
 {
@@ -27,8 +36,14 @@ namespace PR_LAB_1
         public static int flag4 = 0;
         public static int flag5 = 0;
         public static int flag6 = 0;
+        public static int flag7 = 0;
+        public static int flag8 = 0;
 
-        public static List<string> dataQueue = new List<string>();
+        public static List<dynamic> dataQueue = new List<dynamic>();
+        public static List<dynamic> csv = new List<dynamic>();
+        public static List<dynamic> yaml = new List<dynamic>();
+        public static List<dynamic> xml = new List<dynamic>();
+        public static List<dynamic> json = new List<dynamic>();
 
         static async System.Threading.Tasks.Task Main(string[] args)
         {
@@ -58,7 +73,8 @@ namespace PR_LAB_1
 
             }
 
-            
+            ThreadPool.QueueUserWorkItem(convertToJSON);
+
             ThreadPool.QueueUserWorkItem(o => Work(flag1));
             ThreadPool.QueueUserWorkItem(o => Work(flag2));
             ThreadPool.QueueUserWorkItem(o => Work(flag3));
@@ -92,6 +108,31 @@ namespace PR_LAB_1
                         ThreadPool.QueueUserWorkItem(o => Work(flag4));
                     }
 
+                    if (flag5 == 0)
+                    {
+                        flag5 = 5;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag5));
+                    }
+
+                    if (flag6 == 0)
+                    {
+                        flag6 = 6;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag6));
+                    }
+   
+                    if (flag7 == 0)
+                    {
+                        flag7 = 7;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag7));
+                    }
+
+                    if (flag8 == 0)
+                    {
+                        flag8 = 8;
+                        ThreadPool.QueueUserWorkItem(o => Work(flag8));
+                    }
+
+
                 }
 
             }
@@ -102,6 +143,72 @@ namespace PR_LAB_1
                 var result = await client.GetStringAsync(tokenURL);
                 dynamic convertedResult = JsonConvert.DeserializeObject(result);
                 token = convertedResult.access_token;
+            }
+
+            static void sortData(Object stateInfo)
+            {
+                
+            }
+
+            static void convertToJSON(Object stateInfo)
+            {
+                begginingOfConvert:
+                if (xml.Count > 0)
+                    {
+                       
+                        XmlDocument doc = new XmlDocument();
+                        doc.LoadXml(xml[0].ToString());
+                        string json = JsonConvert.SerializeXmlNode(doc);
+                        Console.WriteLine(json);
+                        dataQueue.Add(json.ToString());
+                        xml.RemoveAt(0);
+                    }
+
+                if (csv.Count > 0)
+                {
+
+                    StringBuilder sb = new StringBuilder();
+                    using (var p = ChoCSVReader.LoadText(csv[0].ToString())
+                        .WithFirstLineHeader()
+                        )
+                    {
+                        using (var w = new ChoJSONWriter(sb))
+                            w.Write(p);
+                        dataQueue.Add(sb.ToString());
+                    }
+
+                    Console.WriteLine(sb.ToString());
+                    csv.RemoveAt(0);
+
+                }
+
+                if (yaml.Count > 0)
+                {
+                    var r = new StringReader(yaml[0].ToString());
+                    var deserializer = new Deserializer();
+                    var yamlObject = deserializer.Deserialize(r);
+
+                    var serializer = new Serializer(SerializationOptions.JsonCompatible);
+                    using (StringWriter textWriter = new StringWriter())
+                    {
+                        serializer.Serialize(textWriter, yamlObject);
+                        dataQueue.Add(textWriter.ToString());
+                        Console.WriteLine(textWriter.ToString());
+                    }
+                        
+                    yaml.RemoveAt(0);
+
+                }
+
+                if (json.Count > 0)
+                {
+                    Console.WriteLine(json[0]);
+                    dataQueue.Add(json[0].ToString());
+                    json.RemoveAt(0);
+                }
+            
+                goto begginingOfConvert;
+                
             }
 
             static async void Work(int flagID)
@@ -139,8 +246,26 @@ namespace PR_LAB_1
                 
                 lock (balanceLock)
                 {
-                    dataQueue.Add(convertedResult.data.ToString());
-                    Console.WriteLine(convertedResult.data.ToString());
+                    if (convertedResult.ToString().Contains("xml"))
+                    {
+                        xml.Add(convertedResult.data);
+                    }
+
+                    else if (convertedResult.ToString().Contains("yaml"))
+                    {
+                        yaml.Add(convertedResult.data);
+                    }
+
+                    else if (convertedResult.ToString().Contains("csv"))
+                    {
+                        csv.Add(convertedResult.data);
+                    }
+
+                    else
+                    {
+                        json.Add(convertedResult.data);
+                    }
+                    
                 }
                 
 
@@ -175,6 +300,22 @@ namespace PR_LAB_1
                     if (flagID == flag4)
                     {
                         flag4 = 0;
+                    }
+                    if (flagID == flag5)
+                    {
+                        flag5 = 0;
+                    }
+                    if (flagID == flag6)
+                    {
+                        flag6 = 0;
+                    }
+                    if (flagID == flag7)
+                    {
+                        flag7 = 0;
+                    }
+                    if (flagID == flag8)
+                    {
+                        flag8 = 0;
                     }
                 }
             }
