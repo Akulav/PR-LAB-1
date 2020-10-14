@@ -11,6 +11,7 @@ using System.Text;
 using ChoETL;
 using System.Net;
 using System.Net.Sockets;
+using System.Linq;
 
 namespace PR_LAB_1
 {
@@ -51,6 +52,11 @@ namespace PR_LAB_1
         public static List<dynamic> ids = new List<dynamic>();
         public static List<dynamic> usernames = new List<dynamic>();
         public static List<dynamic> created_account_data = new List<dynamic>();
+        public static List<dynamic> employee_ids = new List<dynamic>();
+        public static List<dynamic> bitcoin_addresses = new List<dynamic>();
+        public static List<dynamic> card_numbers = new List<dynamic>();
+        public static List<dynamic> card_balances = new List<dynamic>();
+        public static List<dynamic> card_currencies = new List<dynamic>();
 
         public static string receivedQuery = "";
 
@@ -81,18 +87,17 @@ namespace PR_LAB_1
                 }
 
             }
-
-            
-            ThreadPool.QueueUserWorkItem(sortData);
+ 
 
             ThreadPool.QueueUserWorkItem(o => Work(flag1));
             ThreadPool.QueueUserWorkItem(o => Work(flag2));
             ThreadPool.QueueUserWorkItem(o => Work(flag3));
             ThreadPool.QueueUserWorkItem(o => Work(flag4));
-
-            ThreadPool.QueueUserWorkItem(convertToJSON);
             
-            //ThreadPool.QueueUserWorkItem(startServer);
+            ThreadPool.QueueUserWorkItem(convertToJSON);
+            ThreadPool.QueueUserWorkItem(sortData);
+            ThreadPool.QueueUserWorkItem(startServer);
+
             while (true)
             {
                 if (flag1 == 0)
@@ -144,21 +149,10 @@ namespace PR_LAB_1
                         ThreadPool.QueueUserWorkItem(o => Work(flag8));
                     }
 
-                    if(dataQueue.Count == 1)
-                    {
-                        break;
-                    }
-                }        
-            }
+                }
 
-            ThreadPool.QueueUserWorkItem(sortData);
-            ThreadPool.QueueUserWorkItem(startServer);
+          
 
-            while (true)
-            {
-            back:
-
-                goto back;
             }
 
             static async void GetToken(Object stateInfo)
@@ -174,7 +168,7 @@ namespace PR_LAB_1
 
                 TcpListener server = new TcpListener(IPAddress.Any, 9999);
                 server.Start();
-
+                string input = String.Empty;
                 while (true)   //we wait for a connection
                 {
                     TcpClient client = server.AcceptTcpClient();  //if a connection exists, the server will accept it
@@ -182,14 +176,42 @@ namespace PR_LAB_1
                     NetworkStream ns = client.GetStream(); //networkstream is used to send/receive messages
 
                     byte[] hello = new byte[100];   //any message must be serialized (converted to byte array)
-                    hello = Encoding.Default.GetBytes("hello world");  //conversion string => byte array
+                    hello = Encoding.Default.GetBytes("Africa maladet");  //conversion string => byte array
 
                     ns.Write(hello, 0, hello.Length);     //sending the message
 
+
+
                     while (client.Connected)  //while the client is connected, we look for incoming messages
                     {
-                        
+
+                        //byte[] af = new byte[100];   //any message must be serialized (converted to byte array)
+                        //af = Encoding.Default.GetBytes(emails[0].ToString());  //conversion string => byte array
+                        //ns.Write(af, 0, af.Length);     //sending the message
+
+                        byte[] msg = new byte[1024];     //the messages arrive as byte array
+                        int i = ns.Read(msg, 0, msg.Length);   //the same networkstream reads the message sent by the client
+                        input = input + Encoding.ASCII.GetString(msg, 0 , i);
+
+                        if (input.Equals("email"))
+                        {
+                            byte[] output = new byte[100];   //any message must be serialized (converted to byte array)
+                            var finalEmails = emails.Distinct().ToList();
+                            for (int j = 0; j < finalEmails.Count - 1; j++)
+                            {
+                                output = Encoding.Default.GetBytes(finalEmails[j].ToString());  //conversion string => byte array
+                                ns.Write(output, 0, output.Length);     //sending the message
+                            }
+
+                            input = String.Empty;
+                            byte[] newLine = new byte[100];   //any message must be serialized (converted to byte array)
+                            newLine = Encoding.Default.GetBytes(" \n");  //conversion string => byte array
+
+                            ns.Write(newLine, 0, newLine.Length);
+                        }
+
                     }
+
                 }
 
             }
@@ -200,59 +222,98 @@ namespace PR_LAB_1
                 
                 if (dataQueue.Count > 0)
                 {
-                    dynamic dynJson = JsonConvert.DeserializeObject(dataQueue[0].ToString());
-
-                    foreach (var item in dynJson)
+                    try
                     {
-                        if (item.ToString().Contains("email"))
-                        {
-                            //Console.WriteLine(item.email);
-                            emails.Add(item.email);
-                        }
+                        dynamic dynJson = JsonConvert.DeserializeObject(dataQueue[0].ToString());
 
-                        else if (item.ToString().Contains("id"))
-                        {
-                            //Console.WriteLine(item.id);
-                            ids.Add(item.ids);
-                        }
 
-                        else if (item.ToString().Contains("username"))
-                        {
-                            //Console.WriteLine(item.username);
-                            usernames.Add(item.usernames);
-                        }
 
-                        else if (item.ToString().Contains("created_account_data"))
-                        {
-                            //Console.WriteLine(item.created_account_data);
-                            created_account_data.Add(item.created_account_data);
-                        }
 
-                        if (item.ToString().Contains("gender"))
+                        foreach (var item in dynJson)
                         {
-                            //Console.WriteLine(item.gender);
-                            genders.Add(item.genders);
-                        }
+                            if (item.ToString().Contains("email"))
+                            {
+                                //Console.WriteLine(item.email);
+                                emails.Add(item.email);
+                            }
 
-                        else if (item.ToString().Contains("ip_address"))
-                        {
-                            //Console.WriteLine(item.ip_address);
-                            ip_addresses.Add(item.ip_addresses);
-                        }
+                            else if (item.ToString().Contains("id"))
+                            {
+                                //Console.WriteLine(item.id);
+                                ids.Add(item.id);
+                            }
 
-                        else if (item.ToString().Contains("first_name"))
-                        {
-                            //Console.WriteLine(item.first_name);
-                            first_names.Add(item.first_names);
-                        }
+                            else if (item.ToString().Contains("username"))
+                            {
+                                //Console.WriteLine(item.username);
+                                usernames.Add(item.username);
+                            }
 
-                        else if (item.ToString().Contains("last_name"))
-                        {
-                            //Console.WriteLine(item.last_name);
-                            last_names.Add(item.last_names);
+                            else if (item.ToString().Contains("created_account_data"))
+                            {
+                                //Console.WriteLine(item.created_account_data);
+                                created_account_data.Add(item.created_account_data);
+                            }
+
+                            if (item.ToString().Contains("gender"))
+                            {
+                                //Console.WriteLine(item.gender);
+                                genders.Add(item.gender);
+                            }
+
+                            else if (item.ToString().Contains("ip_address"))
+                            {
+                                //Console.WriteLine(item.ip_address);
+                                ip_addresses.Add(item.ip_address);
+                            }
+
+                            else if (item.ToString().Contains("first_name"))
+                            {
+                                //Console.WriteLine(item.first_name);
+                                first_names.Add(item.first_name);
+                            }
+
+                            else if (item.ToString().Contains("last_name"))
+                            {
+                                //Console.WriteLine(item.last_name);
+                                last_names.Add(item.last_name);
+                            }
+
+                            else if (item.ToString().Contains("bitcoin_addresses"))
+                            {
+                                //Console.WriteLine(item.last_name);
+                                bitcoin_addresses.Add(item.bitcoin_address);
+                            }
+
+                            else if (item.ToString().Contains("card_numbers"))
+                            {
+                                //Console.WriteLine(item.last_name);
+                                card_numbers.Add(item.card_number);
+                            }
+
+                            else if (item.ToString().Contains("card_balances"))
+                            {
+                                //Console.WriteLine(item.last_name);
+                                card_balances.Add(item.card_balance);
+                            }
+
+                            else if (item.ToString().Contains("card_currencies"))
+                            {
+                                //Console.WriteLine(item.last_name);
+                                card_currencies.Add(item.card_currency);
+                            }
+
+                            else if (item.ToString().Contains("employee_ids"))
+                            {
+                                //Console.WriteLine(item.last_name);
+                                employee_ids.Add(item.employee_id);
+                            }
+
                         }
 
                     }
+
+                    catch { goto beginningSortData; }
 
                     if (dataQueue.Count > 0)
                     {
