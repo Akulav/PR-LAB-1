@@ -36,9 +36,6 @@ namespace PR_LAB_1
         public static int flag3 = 0;
         public static int flag4 = 0;
         public static int flag5 = 0;
-        public static int flag6 = 0;
-        public static int flag7 = 0;
-        public static int flag8 = 0;
 
         //universal stop signal (stops all threads after telnet connection)
         public static int stopSignal = 0;
@@ -95,6 +92,7 @@ namespace PR_LAB_1
                 if (i % 2 != 0)
                 {
                     links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    ThreadPool.QueueUserWorkItem(o => Work(flag5));
                 }
 
             }
@@ -230,7 +228,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -248,7 +246,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -266,7 +264,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -284,7 +282,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -300,7 +298,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -316,7 +314,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -332,7 +330,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -348,7 +346,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -364,7 +362,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -380,7 +378,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -396,7 +394,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -412,7 +410,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -428,7 +426,7 @@ namespace PR_LAB_1
 
                                     input = String.Empty;
                                     byte[] newLine = new byte[100];
-                                    newLine = Encoding.Default.GetBytes(" \n");
+                                    newLine = Encoding.Default.GetBytes("\n\r");
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
@@ -676,18 +674,6 @@ namespace PR_LAB_1
                 else if (flagID == flag5)
                 {
                     flag5 = 0;
-                }
-                else if (flagID == flag6)
-                {
-                    flag6 = 0;
-                }
-                else if (flagID == flag7)
-                {
-                    flag7 = 0;
-                }
-                else if (flagID == flag8)
-                {
-                    flag8 = 0;
                 }
             }
         }
