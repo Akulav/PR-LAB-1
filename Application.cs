@@ -74,7 +74,7 @@ namespace PR_LAB_1
             //No procedding if token hasnt come yet
             while (true)
             {
-                if (token != "") { break; }              
+                if (token != "") { break; }
             }
 
             //Connect with token
@@ -100,10 +100,6 @@ namespace PR_LAB_1
             }
 
             //Start 4 threads for the initial 4 links
-            ThreadPool.QueueUserWorkItem(o => Work(flag1));
-            ThreadPool.QueueUserWorkItem(o => Work(flag2));
-            ThreadPool.QueueUserWorkItem(o => Work(flag3));
-            ThreadPool.QueueUserWorkItem(o => Work(flag4));
 
             //Start data conversion, sorting, server
             ThreadPool.QueueUserWorkItem(convertToJSON);
@@ -114,9 +110,9 @@ namespace PR_LAB_1
             while (true)
             {
                 if (stopSignal == 1) { Console.WriteLine("I broke free"); break; }
-
-                if (flag1 == 0)
-                {
+                if (links.Count > 0)
+                {             
+                    if (flag1 == 0)
                     {
                         flag1 = 1;
                         ThreadPool.QueueUserWorkItem(o => Work(flag1));
@@ -139,9 +135,9 @@ namespace PR_LAB_1
                         flag4 = 4;
                         ThreadPool.QueueUserWorkItem(o => Work(flag4));
                     }
-
-
+                    
                 }
+
 
             }
 
@@ -622,8 +618,6 @@ namespace PR_LAB_1
 
                 dynamic convertedResult = JsonConvert.DeserializeObject(result);
 
-                Thread.Sleep(1); //helps the cpu boost algorithm
-
                 //Lock to prevent read/write errors
                 lock (balanceLock)
                 {
@@ -656,12 +650,13 @@ namespace PR_LAB_1
                 {
                     if (i == matches.Count) { break; }
                     links.Add(matches[i].ToString().Replace("\"", String.Empty));
+                    ThreadPool.QueueUserWorkItem(o => Work(flag5));
                 }
 
             killSwitchJson:;
             endOfFunction:;
 
-            //prevents instantianting more than enough threads
+                //prevents instantianting more than enough threads
                 if (flagID == flag1)
                 {
                     flag1 = 0;
