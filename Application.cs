@@ -13,20 +13,24 @@ using System.Net;
 using System.Net.Sockets;
 using System.Linq;
 
+
 namespace PR_LAB_1
 {
     class Program
     {
+        //start-up links
         public static string tokenURL = "http://localhost:5000/register";
         public static string token = "";
         public static string homeURL = "http://localhost:5000/home";
-        public static List<ManualResetEvent> events = new List<ManualResetEvent>();
 
+        //list of links, lock
         private static readonly object balanceLock = new object();
         public static List<string> links = new List<string>();
 
-        private static int flag = 0;
+        //Prevents removing first link before processing
+        public static int flag = 0;
 
+        //stop signals for threads (1 to 8)
         public static int flag1 = 0;
         public static int flag2 = 0;
         public static int flag3 = 0;
@@ -36,16 +40,17 @@ namespace PR_LAB_1
         public static int flag7 = 0;
         public static int flag8 = 0;
 
+        //universal stop signal (stops all threads after telnet connection)
         public static int stopSignal = 0;
 
+        //list of sorted data
         public static List<dynamic> dataQueue = new List<dynamic>();
         public static List<dynamic> csv = new List<dynamic>();
         public static List<dynamic> yaml = new List<dynamic>();
         public static List<dynamic> xml = new List<dynamic>();
         public static List<dynamic> json = new List<dynamic>();
 
-        public static List<dynamic> finalData = new List<dynamic>();
-
+        //final sorted data
         public static List<dynamic> emails = new List<dynamic>();
         public static List<dynamic> organizations = new List<dynamic>();
         public static List<dynamic> ip_addresses = new List<dynamic>();
@@ -60,19 +65,23 @@ namespace PR_LAB_1
         public static List<dynamic> card_balances = new List<dynamic>();
         public static List<dynamic> card_currencies = new List<dynamic>();
 
-        public static string receivedQuery = "";
-
+        [Obsolete] //surpasses errors for soon to be deprecated functions
         static async System.Threading.Tasks.Task Main(string[] args)
         {
             //Get the token and wait a bit.
             ThreadPool.QueueUserWorkItem(GetToken);
-            Thread.Sleep(1000);
 
-            //Start Getting Data
+            //No procedding if token hasnt come yet
+            while (true)
+            {
+                if (token != "") { break; }              
+            }
 
+            //Connect with token
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("X-Access-Token", token);
 
+            //Get first 4 links from the default home url
             var result = await client.GetStringAsync(homeURL);
             dynamic convertedResult = JsonConvert.DeserializeObject(result);
 
@@ -90,16 +99,18 @@ namespace PR_LAB_1
 
             }
 
-
+            //Start 4 threads for the initial 4 links
             ThreadPool.QueueUserWorkItem(o => Work(flag1));
             ThreadPool.QueueUserWorkItem(o => Work(flag2));
             ThreadPool.QueueUserWorkItem(o => Work(flag3));
             ThreadPool.QueueUserWorkItem(o => Work(flag4));
 
+            //Start data conversion, sorting, server
             ThreadPool.QueueUserWorkItem(convertToJSON);
             ThreadPool.QueueUserWorkItem(sortData);
             ThreadPool.QueueUserWorkItem(startServer);
 
+            //Thread management. Stops once user connects to telnet
             while (true)
             {
                 if (stopSignal == 1) { Console.WriteLine("I broke free"); break; }
@@ -134,12 +145,14 @@ namespace PR_LAB_1
 
             }
 
+            //Prevents program from exiting
             while (true)
             {
                 int a = 0;
                 a = a + a;
             }
 
+            //Eliminate duplicates in data (just in case)
             static void makeDistinct()
             {
                 emails = emails.Distinct().ToList();
@@ -157,6 +170,7 @@ namespace PR_LAB_1
                 card_currencies = card_currencies.Distinct().ToList();
             }
 
+            //Get the token
             static async void GetToken(Object stateInfo)
             {
                 var client = new HttpClient();
@@ -165,6 +179,7 @@ namespace PR_LAB_1
                 token = convertedResult.access_token;
             }
 
+            //Start TCP server
             static void startServer(Object stateInfo)
             {
 
@@ -187,18 +202,15 @@ namespace PR_LAB_1
                     while (client.Connected)  //while the client is connected, we look for incoming messages
                     {
                         makeDistinct();
-
-                        stopSignal = 1;
+                        stopSignal = 1; //stops all other threads
 
                         try
                         {
-
                             byte[] msg = new byte[1024];
                             int i = ns.Read(msg, 0, msg.Length);
                             input = input + Encoding.ASCII.GetString(msg, 0, i);
 
-
-
+                            //Compares input to data
                             if (Encoding.ASCII.GetString(msg, 0, i).Equals("D"))
                             {
 
@@ -280,8 +292,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("organization"))
@@ -298,8 +308,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("created_account_data"))
@@ -316,8 +324,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("ip_address"))
@@ -334,8 +340,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("first_name"))
@@ -352,7 +356,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
                             }
 
                             if (input.Equals("bitcoin_address"))
@@ -369,8 +372,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("card_number"))
@@ -387,8 +388,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("card_balance"))
@@ -405,8 +404,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("card_currency"))
@@ -423,8 +420,6 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
 
                             if (input.Equals("employee_id"))
@@ -441,111 +436,90 @@ namespace PR_LAB_1
 
                                     ns.Write(newLine, 0, newLine.Length);
                                 }
-
-
                             }
                         }
-
                         catch { }
-
                     }
-
                 }
-
             }
 
+            //Sorts data by type
             static void sortData(Object stateInfo)
             {
             beginningSortData:
-
+                if (stopSignal == 1) { goto killSortData; } //kill
                 if (dataQueue.Count > 0)
                 {
                     try
                     {
                         dynamic dynJson = JsonConvert.DeserializeObject(dataQueue[0].ToString());
-
                         foreach (var item in dynJson)
                         {
                             if (item.ToString().Contains("email"))
                             {
-                                //Console.WriteLine(item.email);
                                 emails.Add(item.email);
                             }
 
                             if (item.ToString().Contains("id"))
                             {
-                                //Console.WriteLine(item.id);
                                 ids.Add(item.id);
                             }
 
                             if (item.ToString().Contains("username"))
                             {
-                                //Console.WriteLine(item.username);
                                 usernames.Add(item.username);
                             }
 
                             if (item.ToString().Contains("created_account_data"))
                             {
-                                //Console.WriteLine(item.created_account_data);
                                 created_account_data.Add(item.created_account_data);
                             }
 
                             if (item.ToString().Contains("organization"))
                             {
-                                //Console.WriteLine(item.organization);
                                 organizations.Add(item.organization);
                             }
 
                             if (item.ToString().Contains("ip_address"))
                             {
-                                //Console.WriteLine(item.ip_address);
                                 ip_addresses.Add(item.ip_address);
                             }
 
                             if (item.ToString().Contains("first_name"))
                             {
-                                //Console.WriteLine(item.first_name);
                                 first_names.Add(item.first_name);
                             }
 
                             if (item.ToString().Contains("last_name"))
                             {
-                                //Console.WriteLine(item.last_name);
                                 last_names.Add(item.last_name);
                             }
 
                             if (item.ToString().Contains("bitcoin_address"))
                             {
-                                //Console.WriteLine(item.last_name);
                                 bitcoin_addresses.Add(item.bitcoin_address);
                             }
 
                             if (item.ToString().Contains("card_number"))
                             {
-                                //Console.WriteLine(item.last_name);
                                 card_numbers.Add(item.card_number);
                             }
 
                             if (item.ToString().Contains("card_balance"))
                             {
-                                //Console.WriteLine(item.last_name);
                                 card_balances.Add(item.card_balance);
                             }
 
                             if (item.ToString().Contains("card_currency"))
                             {
-                                //Console.WriteLine(item.last_name);
                                 card_currencies.Add(item.card_currency);
                             }
 
                             if (item.ToString().Contains("employee_id"))
                             {
-                                //Console.WriteLine(item.last_name);
                                 employee_ids.Add(item.employee_id);
                             }
-
                         }
-
                     }
 
                     catch { goto beginningSortData; }
@@ -554,19 +528,18 @@ namespace PR_LAB_1
                     {
                         dataQueue.RemoveAt(0);
                     }
-
-
                 }
 
-                goto beginningSortData;
+                goto beginningSortData; //prevents thread from dying, (basically just a loop)
+            killSortData:;
             }
 
+            //does what it says
             static void convertToJSON(Object stateInfo)
             {
             begginingOfConvert:
                 if (xml.Count > 0)
                 {
-
                     XmlDocument doc = new XmlDocument();
                     doc.LoadXml(xml[0].ToString());
                     string result = JsonConvert.SerializeXmlNode(doc);
@@ -580,7 +553,6 @@ namespace PR_LAB_1
 
                 if (csv.Count > 0)
                 {
-
                     StringBuilder sb = new StringBuilder();
                     using (var p = ChoCSVReader.LoadText(csv[0].ToString())
                         .WithFirstLineHeader()
@@ -590,10 +562,8 @@ namespace PR_LAB_1
                             w.Write(p);
                         dataQueue.Add(sb.ToString());
                     }
-
                     Console.WriteLine(sb.ToString());
                     csv.RemoveAt(0);
-
                 }
 
                 if (yaml.Count > 0)
@@ -601,7 +571,6 @@ namespace PR_LAB_1
                     var r = new StringReader(yaml[0].ToString());
                     var deserializer = new Deserializer();
                     var yamlObject = deserializer.Deserialize(r);
-
                     var serializer = new Serializer(SerializationOptions.JsonCompatible);
                     using (StringWriter textWriter = new StringWriter())
                     {
@@ -609,9 +578,7 @@ namespace PR_LAB_1
                         dataQueue.Add(textWriter.ToString());
                         Console.WriteLine(textWriter.ToString());
                     }
-
                     yaml.RemoveAt(0);
-
                 }
 
                 if (json.Count > 0)
@@ -621,18 +588,16 @@ namespace PR_LAB_1
                     json.RemoveAt(0);
                 }
 
-                goto begginingOfConvert;
-
+                goto begginingOfConvert; //(keep loop active)
             }
 
+            //Main working thread, 8 possible id (see flags)
             static async void Work(int flagID)
             {
-
-            startOfFunction:
-
                 var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("X-Access-Token", token);
 
+                //prevents removing first element
                 lock (balanceLock)
                 {
 
@@ -657,8 +622,9 @@ namespace PR_LAB_1
 
                 dynamic convertedResult = JsonConvert.DeserializeObject(result);
 
-                Thread.Sleep(1);
+                Thread.Sleep(1); //helps the cpu boost algorithm
 
+                //Lock to prevent read/write errors
                 lock (balanceLock)
                 {
                     if (convertedResult.ToString().Contains("xml"))
@@ -680,9 +646,7 @@ namespace PR_LAB_1
                     {
                         json.Add(convertedResult.data);
                     }
-
                 }
-
 
                 var reg = new Regex("\".*?\"");
                 if (convertedResult.link == null) { goto killSwitchJson; }
@@ -691,49 +655,45 @@ namespace PR_LAB_1
                 for (int i = 0; i < 100; i++)
                 {
                     if (i == matches.Count) { break; }
-                   
-                        links.Add(matches[i].ToString().Replace("\"", String.Empty));
-                    
+                    links.Add(matches[i].ToString().Replace("\"", String.Empty));
                 }
+
             killSwitchJson:;
-
-
             endOfFunction:;
 
-                
-                    if (flagID == flag1)
-                    {
-                        flag1 = 0;
-                    }
-                    if (flagID == flag2)
-                    {
-                        flag2 = 0;
-                    }
-                    if (flagID == flag3)
-                    {
-                        flag3 = 0;
-                    }
-                    if (flagID == flag4)
-                    {
-                        flag4 = 0;
-                    }
-                    if (flagID == flag5)
-                    {
-                        flag5 = 0;
-                    }
-                    if (flagID == flag6)
-                    {
-                        flag6 = 0;
-                    }
-                    if (flagID == flag7)
-                    {
-                        flag7 = 0;
-                    }
-                    if (flagID == flag8)
-                    {
-                        flag8 = 0;
-                    }
-                
+            //prevents instantianting more than enough threads
+                if (flagID == flag1)
+                {
+                    flag1 = 0;
+                }
+                else if (flagID == flag2)
+                {
+                    flag2 = 0;
+                }
+                else if (flagID == flag3)
+                {
+                    flag3 = 0;
+                }
+                else if (flagID == flag4)
+                {
+                    flag4 = 0;
+                }
+                else if (flagID == flag5)
+                {
+                    flag5 = 0;
+                }
+                else if (flagID == flag6)
+                {
+                    flag6 = 0;
+                }
+                else if (flagID == flag7)
+                {
+                    flag7 = 0;
+                }
+                else if (flagID == flag8)
+                {
+                    flag8 = 0;
+                }
             }
         }
     }
